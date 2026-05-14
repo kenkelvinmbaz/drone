@@ -48,8 +48,8 @@ jobs:
           echo "exit_code=$?" >> $GITHUB_OUTPUT
           cat /tmp/herozion-result.json
 
-      - name: Post PR comment on quality gate failure
-        if: always() && steps.scan.outputs.exit_code != '0'
+      - name: Post PR comment
+        if: always()
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         with:
           script: |
@@ -71,8 +71,10 @@ jobs:
               prNumber = prs[0].number;
             }
 
+            const exitCode = '${{ steps.scan.outputs.exit_code }}';
+            const passed   = exitCode === '0';
             const score    = result?.score?.value ?? 0;
-            const grade    = result?.score?.grade ?? 'F';
+            const grade    = result?.score?.grade ?? (passed ? 'A' : 'F');
             const total    = result?.total_vulnerabilities ?? 0;
             const scanId   = result?.scan_id ?? '';
             const vulns    = result?.vulnerabilities ?? [];
@@ -89,16 +91,30 @@ jobs:
               .slice(0,5)
               .map(v => `- **[${v.severity.toUpperCase()}]** ${v.title}${v.file_path ? ` — \`${v.file_path}${v.line_number?':'+v.line_number:''}\`` : ''}`)
               .join('\n');
-            const body = [
-              '## ❌ Herozion Security Scan — Quality Gate **FAILED**','',
-              `${gradeIcons[grade]??'⚪'} Grade **${grade}** · Score **${score}/100** · Required: **≥ ${minScore}**`,'',
-              `Scanned on commit \`${context.sha.slice(0,8)}\` · **${total} vulnerabilities** found`,'',
-              '| Severity | Count |','|----------|-------|',tableRows,'',
-              '**Top issues:**',top5,'',
-              `> ⛔ Security score **${score}/100** is below the required threshold of **${minScore}**.`,'',
-              scanId ? `💡 [View full report on Herozion](https://app.herozion.io/reports/${scanId})` : '💡 [View reports on Herozion](https://app.herozion.io)','',
-              '---','*Posted by [Herozion](https://herozion.io) · automated security scan*',
-            ].join('\n');
+
+            let body;
+            if (passed) {
+              body = [
+                '## ✅ Herozion Security Scan — Quality Gate **PASSED**','',
+                `${gradeIcons[grade]??'🟢'} Grade **${grade}** · Score **${score}/100** · Required: **≥ ${minScore}**`,'',
+                `Scanned on commit \`${context.sha.slice(0,8)}\` · **${total} vulnerabilities** found`,'',
+                total > 0 ? ('| Severity | Count |\n|----------|-------|\n' + tableRows + '\n') : '> No critical or high vulnerabilities detected.\n',
+                scanId ? `💡 [View full report on Herozion](https://app.herozion.io/reports/${scanId})` : '💡 [View reports on Herozion](https://app.herozion.io)','',
+                '---','*Posted by [Herozion](https://herozion.io) · automated security scan*',
+              ].join('\n');
+            } else {
+              body = [
+                '## ❌ Herozion Security Scan — Quality Gate **FAILED**','',
+                `${gradeIcons[grade]??'⚪'} Grade **${grade}** · Score **${score}/100** · Required: **≥ ${minScore}**`,'',
+                `Scanned on commit \`${context.sha.slice(0,8)}\` · **${total} vulnerabilities** found`,'',
+                '| Severity | Count |','|----------|-------|',tableRows,'',
+                '**Top issues:**',top5,'',
+                `> ⛔ Security score **${score}/100** is below the required threshold of **${minScore}**.`,'',
+                scanId ? `💡 [View full report on Herozion](https://app.herozion.io/reports/${scanId})` : '💡 [View reports on Herozion](https://app.herozion.io)','',
+                '---','*Posted by [Herozion](https://herozion.io) · automated security scan*',
+              ].join('\n');
+            }
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo:  context.repo.repo,
