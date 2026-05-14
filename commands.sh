@@ -209,7 +209,7 @@ echo ""
 
 # ═══════════════════════════════════════════════════════════════
 echo ""
-echo "🎁 BONUS: Voir tous les secrets"
+echo " BONUS: Voir tous les secrets"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 cat << 'EOF'
