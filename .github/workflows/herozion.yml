@@ -2,7 +2,6 @@ name: Herozion Security Scan
 
 on:
   push:
-    branches-ignore: ["main", "develop"]
   pull_request:
     branches: ["main", "develop"]
 
