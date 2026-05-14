@@ -29,8 +29,8 @@ app.use(session({
 // DATA - Base de données "en mémoire"
 // ============================================
 let users = [
-  { id: 1, username: 'user', email: 'user@sneakers.com', password: 'user123' },
-  { id: 2, username: 'admin', email: 'admin@sneakers.com', password: 'admin' }
+  { id: 1, username: 'user', email: 'user@sneakers.com', password: process.env.PASSWORD },  // FAILLE 2: Admin token utilisé comme password!
+  { id: 2, username: 'admin', email: 'admin@sneakers.com', password: process.env.ADMIN_TOKEN }  // FAILLE 2: Admin token utilisé comme password!
 ];
 
 let loginAttempts = {}; 
