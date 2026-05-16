@@ -29,8 +29,8 @@ app.use(session({
 // DATA - Base de données "en mémoire"
 // ============================================
 let users = [
-  { id: 1, username: 'user', email: 'user@sneakers.com', password: 'Robuste_2026@password*/' },
-  { id: 2, username: 'admin', email: 'admin@sneakers.com', password: 'admin' }
+  { id: 1, username: 'user', email: 'user@sneakers.com', password: process.env.password},
+  { id: 2, username: 'admin', email: 'admin@sneakers.com', password: process.env.ADMIN_TOKEN}
 ];
 
 let loginAttempts = {}; 
@@ -73,37 +73,75 @@ app.get('/', (req, res) => {
 // ============================================
 
 
-app.post('/api/register', (req, res) => {
-  const { username, email, password } = req.body;
-  
-  if (!username || !email || !password) {
-    return res.json({ success: false, error: 'Missing fields' });
+const bcrypt = require('bcrypt');
+const { z } = require('zod');
+
+const registerSchema = z.object({
+  username: z.string().min(3).max(30),
+  email: z.string().email(),
+  password: z.string().min(8).max(128)
+});
+
+app.post('/api/register', async (req, res) => {
+  // Validate request body
+  const validation = registerSchema.safeParse(req.body);
+
+  if (!validation.success) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid request body'
+    });
   }
 
-  // Check if user exists
-  if (users.find(u => u.email === email)) {
-    return res.json({ success: false, error: 'User already exists' });
+  const { username, email, password } = validation.data;
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Check if user already exists
+  if (users.find(u => u.email === normalizedEmail)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid registration request'
+    });
   }
 
+  // Hash password
+  const hashedPassword = await bcrypt.hash(password, 12);
 
   const newUser = {
     id: users.length + 1,
     username,
-    email,
-    password  
+    email: normalizedEmail,
+    password: hashedPassword
   };
 
   users.push(newUser);
 
-  // Auto-login après registration
-  req.session.userId = newUser.id;
-  req.session.username = newUser.username;
+  // Prevent session fixation
+  req.session.regenerate(err => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        error: 'Session error'
+      });
+    }
 
-  if (process.env.DEBUG) {
-    console.log('User registered:', newUser);
-  }
+    req.session.userId = newUser.id;
+    req.session.username = newUser.username;
 
-  res.json({ success: true, message: 'Account created!' });
+    // Safe logging
+    if (process.env.DEBUG) {
+      console.log('User registered:', {
+        id: newUser.id,
+        username: newUser.username
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Account created!'
+    });
+  });
 });
 
 

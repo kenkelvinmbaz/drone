@@ -86,7 +86,7 @@ echo -e "${YELLOW}Config exposes secrets:${NC}"
 echo "curl $BASE_URL/api/v2/config | jq '.database'"
 echo ""
 
-echo -e "${GREEN}Shows: DEBUG=true, database credentials (production!)${NC}"
+echo -e "${GREEN}Shows: DEBUG = False, database credentials (production!)${NC}"
 
 # ============================================
 # 5. HTTPS VERIFICATION DISABLED
@@ -162,7 +162,7 @@ echo "1. SQL Injection - Direct queries"
 echo "2. Hardcoded Secrets - In code and env"
 echo "3. BFLA - No user authorization"
 echo "4. Information Disclosure - Debug mode"
-echo "5. HTTPS verify=false - MITM vulnerable"
+echo "5. HTTPS verify=True - MITM vulnerable"
 echo "6. Command Injection - exec() with user input"
 echo "7. No Rate Limiting - Brute force possible"
 echo ""
