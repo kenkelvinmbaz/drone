@@ -29,8 +29,8 @@ app.use(session({
 // DATA - Base de données "en mémoire"
 // ============================================
 let users = [
-  { id: 1, username: 'user', email: 'user@sneakers.com', password: process.env.PASSWORD },  // FAILLE 2: Admin token utilisé comme password!
-  { id: 2, username: 'admin', email: 'admin@sneakers.com', password: process.env.ADMIN_TOKEN }  // FAILLE 2: Admin token utilisé comme password!
+  { id: 1, username: 'user', email: 'user@sneakers.com', password: process.env.USER_PASSWORD },
+  { id: 2, username: 'admin', email: 'admin@sneakers.com', password: process.env.ADMIN_PASSWORD }
 ];
 
 let loginAttempts = {}; 
@@ -73,38 +73,75 @@ app.get('/', (req, res) => {
 // ============================================
 
 
-app.post('/api/register', (req, res) => {
-  const { username, email, password } = req.body;
+const bcrypt = require('bcrypt');
+const { z } = require('zod');
 
-  
-  if (!username || !email || !password) {
-    return res.json({ success: false, error: 'Missing fields' });
+const registerSchema = z.object({
+  username: z.string().min(3).max(30),
+  email: z.string().email(),
+  password: z.string().min(8).max(128)
+});
+
+app.post('/api/register', async (req, res) => {
+  // Validate request body
+  const validation = registerSchema.safeParse(req.body);
+
+  if (!validation.success) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid request body'
+    });
   }
 
-  // Check if user exists
-  if (users.find(u => u.email === email)) {
-    return res.json({ success: false, error: 'User already exists' });
+  const { username, email, password } = validation.data;
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Check if user already exists
+  if (users.find(u => u.email === normalizedEmail)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid registration request'
+    });
   }
 
+  // Hash password
+  const hashedPassword = await bcrypt.hash(password, 12);
 
   const newUser = {
     id: users.length + 1,
     username,
-    email,
-    password  
+    email: normalizedEmail,
+    password: hashedPassword
   };
 
   users.push(newUser);
 
-  // Auto-login après registration
-  req.session.userId = newUser.id;
-  req.session.username = newUser.username;
+  // Prevent session fixation
+  req.session.regenerate(err => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        error: 'Session error'
+      });
+    }
 
-  if (process.env.DEBUG) {
-    console.log('User registered:', newUser);
-  }
+    req.session.userId = newUser.id;
+    req.session.username = newUser.username;
 
-  res.json({ success: true, message: 'Account created!' });
+    // Safe logging
+    if (process.env.DEBUG) {
+      console.log('User registered:', {
+        id: newUser.id,
+        username: newUser.username
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Account created!'
+    });
+  });
 });
 
 
@@ -185,7 +222,6 @@ app.get('/api/user/profile', isLoggedIn, (req, res) => {
 app.get('/api/user/:id', isLoggedIn, (req, res) => {
   const userId = parseInt(req.params.id);
 
-  // N'importe quel user peut voir les infos d'un autre user
   
   const user = users.find(u => u.id === userId);
   
@@ -195,7 +231,7 @@ app.get('/api/user/:id', isLoggedIn, (req, res) => {
 
   res.json({ 
     success: true, 
-    user: user  // Retourne password et tout!
+    user: user 
   });
 });
 
