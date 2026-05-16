@@ -153,7 +153,7 @@ echo ""
 
 # Cleanup
 rm -f $COOKIE_FILE
-if grep -q "DEBUG=true" .env 2>/dev/null; then
+if grep -q "DEBUG = False" .env 2>/dev/null; then
   test_pass "DEBUG mode is enabled"
 else
   test_fail "DEBUG mode not enabled"

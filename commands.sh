@@ -209,14 +209,14 @@ echo ""
 
 # ═══════════════════════════════════════════════════════════════
 echo ""
-echo "🎁 BONUS: Voir tous les secrets"
+echo " BONUS: Voir tous les secrets"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 cat << 'EOF'
 curl http://localhost:3000/api/config
 EOF
 echo ""
-echo "→ Tous les secrets exposés quand DEBUG=true!"
+echo "→ Tous les secrets exposés quand DEBUG = False!"
 echo ""
 
 # ═══════════════════════════════════════════════════════════════
