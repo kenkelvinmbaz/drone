@@ -7,4 +7,4 @@ ALLOWED_HOSTS = ["*"]
 FLEET_NAME = "drone-ops-eu-west"
 
 # Détecté, PAS auto-fixable (Scénario B — correction manuelle)
-SECRET_KEY = "change-me-drone-fleet-secret"
+SECRET_KEY = "We_neverKX@2026"
