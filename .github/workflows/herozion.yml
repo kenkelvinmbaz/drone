@@ -43,7 +43,8 @@ jobs:
         run: |
           set +e
           herozion scan \
-            --min-score=10 \
+            --fail-on=critical,high \
+            --min-score=100 \
             --output=json > /tmp/herozion-result.json 2>/dev/null
           echo "exit_code=$?" >> $GITHUB_OUTPUT
           cat /tmp/herozion-result.json
