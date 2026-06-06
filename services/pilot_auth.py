@@ -10,6 +10,6 @@ def decode_pilot_token(token: str, secret: str) -> dict:
         token,
         secret,
         algorithms=["HS256"],
-        verify=False,
+        verify=True,
     )
     return payload
